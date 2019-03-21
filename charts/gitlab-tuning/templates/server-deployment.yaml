@@ -31,7 +31,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ['python3']
-          args:  ['-um', 'japronto', 'run:app']
+          args:  ['-um', 'japronto', 'run.app']
           env:
             - name: TOKEN
               valueFrom:
@@ -43,6 +43,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: RABBITMQ_URL
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
+            - name: STATISTIC_URL
+              valueFrom:
+                secretKeyRef:
+                  key: STATISTIC_URL
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
             {{- range $key, $value := $.Values.env }}

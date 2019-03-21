@@ -18,7 +18,11 @@ LDAP_BASE = os.getenv('LDAP_BASE', 'DC=company,DC=com_by')
 gl = gitlab.Gitlab(os.getenv('GITLAB_URL', 'https://gitlab.company.com_by'),
                    private_token=os.getenv('GITLAB_TOKEN', 'GITLAB_TOKEN'))
 
-LDAP_GROUP_PREFIX = os.getenv('LDAP_GROUP_PREFIX', 'Group ')
+tmp_LDAP_GROUP_PREFIX = os.getenv('LDAP_GROUP_PREFIX', 'Group')
+if tmp_LDAP_GROUP_PREFIX:
+    LDAP_GROUP_PREFIX = tmp_LDAP_GROUP_PREFIX + ' '
+else:
+    LDAP_GROUP_PREFIX = ''
 LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
 
