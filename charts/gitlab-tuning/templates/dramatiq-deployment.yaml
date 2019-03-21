@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gitlab-tuning.fullname" . }}
+  name: {{ include "gitlab-tuning.fullname" . }}-dramatiq
   labels:
     app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
     helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
