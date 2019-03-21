@@ -32,23 +32,49 @@ spec:
           volumeMounts:
             - name: prometheus
               mountPath: /tmp/dramatiq-prometheus
-            - name: {{ include "gitlab-tuning.fullname" . }}
-              mountPath: /etc/secrets/service
           env:
             - name: STATISTIC_URL
-              value: "/etc/secrets/service/STATISTIC_URL"
+              valueFrom:
+                secretKeyRef:
+                  key: STATISTIC_URL
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: GITLAB_TOKEN
-              value: "/etc/secrets/service/GITLAB_TOKEN"
+              valueFrom:
+                secretKeyRef:
+                  key: GITLAB_TOKEN
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: REDIS_URL
-              value: "/etc/secrets/service/REDIS_URL"
+              valueFrom:
+                secretKeyRef:
+                  key: REDIS_URL
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: LDAP_URL
-              value: "/etc/secrets/service/LDAP_URL"
+              valueFrom:
+                secretKeyRef:
+                  key: LDAP_URL
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: LDAP_USER
-              value: "/etc/secrets/service/LDAP_USER"
+              valueFrom:
+                secretKeyRef:
+                  key: LDAP_USER
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: LDAP_PASS
-              value: "/etc/secrets/service/LDAP_PASS"
+              valueFrom:
+                secretKeyRef:
+                  key: LDAP_LDAP_PASSBASE
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: LDAP_BASE
-              value: "/etc/secrets/service/LDAP_BASE"
+              valueFrom:
+                secretKeyRef:
+                  key: LDAP_BASE
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             {{- range $key, $value := $.Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}

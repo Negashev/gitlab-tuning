@@ -29,14 +29,19 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ['python3']
           args:  ['-um', 'japronto', 'run:app']
-          volumeMounts:
-          - name: {{ include "gitlab-tuning.fullname" . }}
-            mountPath: /etc/secrets/service
           env:
             - name: TOKEN
-              value: "/etc/secrets/service/TOKEN"
+              valueFrom:
+                secretKeyRef:
+                  key: TOKEN
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             - name: REDIS_URL
-              value: "/etc/secrets/service/REDIS_URL"
+              valueFrom:
+                secretKeyRef:
+                  key: REDIS_URL
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             {{- range $key, $value := $.Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
