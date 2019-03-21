@@ -30,7 +30,7 @@ spec:
           command: ['python3']
           args:  ['-um', 'japronto', 'run:app']
           volumeMounts:
-          - name: service-secrets
+          - name: {{ include "gitlab-tuning.fullname" . }}
             mountPath: /etc/secrets/service
           env:
             - name: TOKEN

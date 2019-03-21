@@ -32,7 +32,7 @@ spec:
           volumeMounts:
             - name: prometheus
               mountPath: /tmp/dramatiq-prometheus
-            - name: service-secrets
+            - name: {{ include "gitlab-tuning.fullname" . }}
               mountPath: /etc/secrets/service
           env:
             - name: STATISTIC_URL
