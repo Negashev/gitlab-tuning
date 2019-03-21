@@ -17,8 +17,8 @@ async def filter_hooks(request):
     data = request.json
     # filter tasks
     if data['event_name'] in ["push", "tag_push"]:
-        print(f"User {data['user_email']} push {data['total_commits_count']} commits")
-        statistic_prepare_data.send(data['commits'])
+        print(f"User {data['user_name']} push {data['total_commits_count']} commits")
+        statistic_prepare_data.send(data['repository']['git_ssh_url'], data['commits'])
     if data['event_name'] == "group_create":
         locations = data['full_path'].split('/')
         if len(locations) >= 2:

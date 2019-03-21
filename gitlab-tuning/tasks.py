@@ -27,22 +27,12 @@ LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
 
 
-def repo_convert_http_to_ssh(repo_url):
-    split = repo_url.split('/commit/')
-    repo = ''.join(split[:-1])
-    parsed_uri = urlparse(repo)
-    path = parsed_uri.path
-    if path.startswith('/'):
-        path = path[1:]
-    return f'git@{parsed_uri.netloc}:{path}.git'
-
-
 @dramatiq.actor(priority=0)
-def statistic_prepare_data(commits):
+def statistic_prepare_data(git_ssh_url, commits):
     for commit in commits:
         data = {"id": commit['id'],
                 "author_email": commit['author']['email'].lower(),
-                "repository": repo_convert_http_to_ssh(commit['url']),
+                "repository": git_ssh_url,
                 "created_at": commit['timestamp']}
         statistic_push_data.send(data)
 
