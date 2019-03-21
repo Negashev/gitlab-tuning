@@ -34,8 +34,8 @@ env:
   LDAP_OBJECTCLASS_GROUP: group
   LDAP_OBJECTCLASS_USER: user
 image:
-  repository: openresty/openresty
-  tag: 1
+  repository: negash/gitlab-tuning
+  tag: latest
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP
