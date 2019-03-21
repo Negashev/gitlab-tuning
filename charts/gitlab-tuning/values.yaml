@@ -1,0 +1,50 @@
+# Default values for gitlab-tuning.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+redisUrl: "redis://redis:6379/1"
+server:
+  token: "your-secret-token"
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+dramatiq:
+  gitlabToken: "your-secret-token"
+  statisticUrl: "http://statistic.com/post-receive"
+  ldapUrl: 'ldap://company.com_by:12345'
+  ldapUser: 'Reader@company.com_by'
+  ldapPass: 'password'
+  ldapBase: 'DC=company,DC=com_by'
+  environments:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+env:
+  GITLAB_URL: http://gitlab-unicorn.gitlab:8080
+  LDAP_OBJECTCLASS_GROUP: group
+  LDAP_OBJECTCLASS_USER: user
+image:
+  repository: openresty/openresty
+  tag: 1
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8080
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+

@@ -1,0 +1,24 @@
+version: '2'
+services:
+  redis:
+    image: redis:alpine
+  dramatiq:
+    links:
+      - redis
+    build:
+      context: .
+    env_file:
+      - .env
+    volumes:
+      - /tmp/dramatiq-prometheus
+    command: ["dramatiq", "tasks"]
+    ports:
+      - 9191:9191
+  server:
+    links:
+      - redis
+    build:
+      context: .
+    command: ["python3", "-um", "japronto", "run:app"]
+    ports:
+      - 8080:8080

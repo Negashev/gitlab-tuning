@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gitlab-tuning.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
+    helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.dramatiq.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      volumes:
+        - emptyDir:
+            sizeLimit: 128Mi
+          name: prometheus
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['dramatiq']
+          args:  ['tasks']
+          volumeMounts:
+            - name: prometheus
+              mountPath: /tmp/dramatiq-prometheus
+            - name: service-secrets
+              mountPath: /etc/secrets/service
+          env:
+            - name: STATISTIC_URL
+              value: "/etc/secrets/service/STATISTIC_URL"
+            - name: GITLAB_TOKEN
+              value: "/etc/secrets/service/GITLAB_TOKEN"
+            - name: REDIS_URL
+              value: "/etc/secrets/service/REDIS_URL"
+            - name: LDAP_URL
+              value: "/etc/secrets/service/LDAP_URL"
+            - name: LDAP_USER
+              value: "/etc/secrets/service/LDAP_USER"
+            - name: LDAP_PASS
+              value: "/etc/secrets/service/LDAP_PASS"
+            - name: LDAP_BASE
+              value: "/etc/secrets/service/LDAP_BASE"
+            {{- range $key, $value := $.Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - name: prometheus
+              containerPort: 9191
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: prometheus
+          readinessProbe:
+            httpGet:
+              path: /
+              port: prometheus
+          resources:
+            {{- toYaml .Values.dramatiq.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

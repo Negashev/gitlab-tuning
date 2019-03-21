@@ -1,0 +1,43 @@
+import os
+
+from japronto import Application
+from tasks import statistic_prepare_data, group_create
+
+TOKEN = os.getenv("TOKEN", "Qwerty")
+app = Application()
+
+STATISTIC_URL = os.getenv("STATISTIC_URL", "http://statistic.com/post-receive")
+
+
+async def filter_hooks(request):
+    # validate hook
+    if request.headers['X-Gitlab-Token'] != TOKEN:
+        return request.Response(code=401, text="Please use valid X-Gitlab-Token")
+
+    data = request.json
+    # filter tasks
+    if data['event_name'] in ["push", "tag_push"]:
+        print(f"User {data['user_email']} push {data['total_commits_count']} commits")
+        statistic_prepare_data.send(data['commits'])
+    if data['event_name'] == "group_create":
+        locations = data['full_path'].split('/')
+        if len(locations) >= 2:
+            return request.Response(text="OK")
+        print(f"Create group {data['name']} path {locations[0]}")
+        group_create.send(locations[0].upper(), data['group_id'])
+    return request.Response(text="OK")
+
+
+async def get_info(request):
+    return request.Response(
+        text=f"- Push commits in queue to {STATISTIC_URL}\n"
+        "- Auto add users(developers) with owner to new gitlab group\n"
+        "Use POST with X-Gitlab-Token and X-Gitlab-Event headers"
+    )
+
+
+r = app.router
+r.add_route('/', get_info, methods=["GET"])
+r.add_route('/', filter_hooks, methods=["POST"])
+
+app.run()
