@@ -24,7 +24,7 @@ spec:
             sizeLimit: 128Mi
           name: prometheus
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-dramatiq
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ['dramatiq']
@@ -66,7 +66,7 @@ spec:
             - name: LDAP_PASS
               valueFrom:
                 secretKeyRef:
-                  key: LDAP_LDAP_PASSBASE
+                  key: LDAP_PASS
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
             - name: LDAP_BASE
