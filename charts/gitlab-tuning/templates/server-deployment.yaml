@@ -37,6 +37,10 @@ spec:
               value: "/etc/secrets/service/TOKEN"
             - name: REDIS_URL
               value: "/etc/secrets/service/REDIS_URL"
+            {{- range $key, $value := $.Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 8080
