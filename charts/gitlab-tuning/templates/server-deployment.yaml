@@ -39,10 +39,10 @@ spec:
                   key: TOKEN
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
-            - name: REDIS_URL
+            - name: RABBITMQ_URL
               valueFrom:
                 secretKeyRef:
-                  key: REDIS_URL
+                  key: RABBITMQ_URL
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
             {{- range $key, $value := $.Values.env }}

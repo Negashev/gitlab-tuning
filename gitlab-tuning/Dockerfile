@@ -15,7 +15,7 @@ RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip open
 VOLUME /tmp/dramatiq-prometheus
 
 ENV STATISTIC_URL=http://statistic.com/post-receive \
-    REDIS_URL=redis://redis:6379/1 \
+    RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672 \
     TOKEN=your-secret-token \
     prometheus_multiproc_dir=/tmp/dramatiq-prometheus \
     dramatiq_prom_db=/tmp/dramatiq-prometheus \

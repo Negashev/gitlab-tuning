@@ -1,10 +1,10 @@
 version: '2'
 services:
-  redis:
-    image: redis:alpine
+  rabbitmq:
+    image: rabbitmq:alpine
   dramatiq:
     links:
-      - redis
+      - rabbitmq
     build:
       context: .
     env_file:
@@ -16,7 +16,7 @@ services:
       - 9191:9191
   server:
     links:
-      - redis
+      - rabbitmq
     build:
       context: .
     command: ["python3", "-um", "japronto", "run:app"]

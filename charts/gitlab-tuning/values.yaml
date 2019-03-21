@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-redisUrl: "redis://redis:6379/1"
+rabbitmqUrl: "amqp://guest:guest@rabbitmq:5672"
 server:
   token: "your-secret-token"
   replicaCount: 2

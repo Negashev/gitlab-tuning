@@ -45,10 +45,10 @@ spec:
                   key: GITLAB_TOKEN
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
-            - name: REDIS_URL
+            - name: RABBITMQ_URL
               valueFrom:
                 secretKeyRef:
-                  key: REDIS_URL
+                  key: RABBITMQ_URL
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
             - name: LDAP_URL

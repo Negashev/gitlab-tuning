@@ -3,12 +3,12 @@ from urllib.parse import urlparse
 
 import ldap
 import dramatiq
-from dramatiq.brokers.redis import RedisBroker
+from dramatiq.brokers.rabbitmq import RabbitmqBroker
 import requests
 import gitlab
 
-redis_broker = RedisBroker(url=os.getenv("REDIS_URL", "redis://redis:6379/1"))
-dramatiq.set_broker(redis_broker)
+broker = RabbitmqBroker(url=os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672"))
+dramatiq.set_broker(broker)
 
 STATISTIC_URL = os.getenv("STATISTIC_URL", "http://statistic.com/post-receive")
 LDAP_URL = os.getenv('LDAP_URL', 'ldap://company.com_by:12345')
