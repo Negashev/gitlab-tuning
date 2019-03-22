@@ -1,7 +1,9 @@
 version: '2'
 services:
   rabbitmq:
-    image: rabbitmq:alpine
+    image: rabbitmq:management-alpine
+    ports:
+      - 15672:15672
   dramatiq:
     links:
       - rabbitmq
@@ -12,13 +14,11 @@ services:
     volumes:
       - /tmp/dramatiq-prometheus
     command: ["dramatiq", "tasks"]
-    ports:
-      - 9191:9191
   server:
     links:
       - rabbitmq
     build:
       context: .
-    command: ["python3", "-um", "japronto", "run:app"]
+    command: ["python3", "-um", "japronto", "run.app"]
     ports:
-      - 8080:8080
+      - 8081:8080

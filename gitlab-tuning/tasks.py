@@ -1,5 +1,4 @@
 import os
-from urllib.parse import urlparse
 
 import ldap
 import dramatiq
@@ -27,23 +26,42 @@ LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
 
 
-@dramatiq.actor(priority=0)
-def statistic_prepare_data(git_ssh_url, commits):
-    for commit in commits:
-        data = {"id": commit['id'],
-                "author_email": commit['author']['email'].lower(),
+@dramatiq.actor(priority=10, max_retries=2)
+def statistic_prepare_data(project_id, git_ssh_url, changes):
+    try:
+        project = gl.projects.get(project_id)
+    except gitlab.exceptions.GitlabGetError as e:
+        if e.error_message == '404 Project Not Found':
+            return
+        else:
+            raise gitlab.exceptions.GitlabGetError
+    for change in changes:
+        commits = project.commits.list(query_parameters={'ref_name': change['after']})
+        change['after'] = commits[-1].id
+        exit_recursion = False
+        for commit in commits[:-1]:
+            if change['before'] == commit.id:
+                # exit from this ref
+                exit_recursion = True
+                break
+            statistic_push_data.send({
+                "id": commit.id,
+                "author_email": commit.author_email.lower(),
                 "repository": git_ssh_url,
-                "created_at": commit['timestamp']}
-        statistic_push_data.send(data)
+                "created_at": commit.created_at
+            })
+        # recursion
+        if len(commits) > 1 and not exit_recursion:
+            statistic_prepare_data.send(project_id, git_ssh_url, [change])
 
 
-@dramatiq.actor(priority=10, max_retries=3)
+@dramatiq.actor(priority=20, max_retries=3)
 def statistic_push_data(data):
     requests.post(STATISTIC_URL, data=data)
     print(f"commit {data['id']} by {data['author_email']} in {data['repository']}")
 
 
-@dramatiq.actor(priority=10, max_retries=3)
+@dramatiq.actor(priority=0, max_retries=3)
 def group_create(group_name, group_id):
     connect = ldap.initialize(LDAP_URL)
     connect.set_option(ldap.OPT_REFERRALS, 0)
@@ -66,7 +84,7 @@ def group_create(group_name, group_id):
     connect.unbind()
 
 
-@dramatiq.actor(priority=20, max_retries=3)
+@dramatiq.actor(priority=10, max_retries=3)
 def gitlab_add_user_to_group(group_id, access_level, email):
     gitlab_user = gl.users.list(search=email)
     if not gitlab_user:
