@@ -23,7 +23,7 @@ dramatiq:
   environments:
   replicaCount: 2
   hpa:
-    targetAverageValue: 1
+    averageUtilization: 75
     minReplicas: 2
     maxReplicas: 10
   resources:
