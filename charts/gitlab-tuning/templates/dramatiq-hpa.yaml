@@ -1,4 +1,4 @@
-apiVersion: autoscaling/v2beta2
+apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
     name: {{ include "gitlab-tuning.fullname" . }}-dramatiq
@@ -7,16 +7,10 @@ metadata:
         app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+    maxReplicas: {{ .Values.dramatiq.hpa.maxReplicas }}
+    minReplicas: {{ .Values.dramatiq.hpa.minReplicas }}
     scaleTargetRef:
-        apiVersion: apps/v1beta2
+        apiVersion: extensions/v1beta1
         kind: Deployment
         name: {{ include "gitlab-tuning.fullname" . }}-dramatiq
-    minReplicas: {{ .Values.dramatiq.hpa.minReplicas }}
-    maxReplicas: {{ .Values.dramatiq.hpa.maxReplicas }}
-    metrics:
-        - type: Resource
-          resource:
-              name: cpu
-              target:
-                type: Utilization
-                averageUtilization: {{ .Values.dramatiq.hpa.averageUtilization }}
+    targetCPUUtilizationPercentage: 80
