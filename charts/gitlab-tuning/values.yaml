@@ -28,11 +28,11 @@ dramatiq:
     maxReplicas: 10
   resources:
     limits:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 200m
+      memory: 256Mi
     requests:
-      cpu: 100m
-      memory: 90Mi
+      cpu: 200m
+      memory: 160Mi
 env:
   GITLAB_URL: http://gitlab-unicorn.gitlab:8080
   LDAP_OBJECTCLASS_GROUP: group

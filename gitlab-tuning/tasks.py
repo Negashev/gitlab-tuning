@@ -36,7 +36,7 @@ def statistic_prepare_data(project_id, git_ssh_url, changes):
         else:
             raise gitlab.exceptions.GitlabGetError
     for change in changes:
-        commits = project.commits.list(query_parameters={'ref_name': change['after']})
+        commits = project.commits.list(query_parameters={'ref_name': change['after']}, per_page=50)
         change['after'] = commits[-1].id
         exit_recursion = False
         for commit in commits[:-1]:
