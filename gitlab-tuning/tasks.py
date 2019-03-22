@@ -61,8 +61,7 @@ def statistic_push_data(data):
     print(f"commit {data['id']} by {data['author_email']} in {data['repository']}")
 
 
-@dramatiq.actor(priority=0, max_retries=3)
-def group_create(group_name, group_id):
+def get_ldap_owner_with_users(group_name):
     connect = ldap.initialize(LDAP_URL)
     connect.set_option(ldap.OPT_REFERRALS, 0)
     connect.simple_bind_s(LDAP_USER, LDAP_PASS)
@@ -75,13 +74,26 @@ def group_create(group_name, group_id):
     ldap_group_owner = entry['managedBy'][0].decode()
     ldap_group_users = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass=user)(memberOf={cn}))',
                                         ['cn', 'mail'])
+    connect.unbind()
+    return ldap_group_owner, ldap_group_users
+
+
+@dramatiq.actor(priority=0, max_retries=3)
+def group_create(group_name, group_id):
+    ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
+    ldap_emails = []
     for ldap_user in ldap_group_users:
-        email = ldap_user[1]['mail'][0].decode()
+        email = ldap_user[1]['mail'][0].decode().lower()
+        ldap_emails.append(email)
         access_level = gitlab.DEVELOPER_ACCESS
         if ldap_user[0] == ldap_group_owner:
             access_level = gitlab.OWNER_ACCESS
+            # explicitly set the OWNER for next gitlab_remove_user_from_group
+            gitlab_add_user_to_group(group_id, access_level, email)
+            continue
         gitlab_add_user_to_group.send(group_id, access_level, email)
-    connect.unbind()
+    # remove creator from group
+    gitlab_remove_user_from_group.send(group_id, ldap_emails)
 
 
 @dramatiq.actor(priority=10, max_retries=3)
@@ -99,3 +111,16 @@ def gitlab_add_user_to_group(group_id, access_level, email):
         print(f'User {email} not added to {group.name} ==> {e}')
     except gitlab.exceptions.GitlabCreateError as e:
         print(f'User {email} not added to {group.name} ==> {e}')
+
+
+@dramatiq.actor(priority=10, max_retries=3)
+def gitlab_remove_user_from_group(group_id, ldap_emails):
+    gitlab_group = gl.groups.get(group_id)
+    gitlab_members = gitlab_group.members.all(all=True)
+    for member in gitlab_members:
+        user = gl.users.get(member['id'])
+        if not user.email:
+            continue
+        if user.email not in ldap_emails:
+            gitlab_group.members.delete(member['id'])
+            print(f'User {user.email} remove from {gitlab_group.name}')
