@@ -3,6 +3,7 @@ kind: HorizontalPodAutoscaler
 metadata:
     name: {{ include "gitlab-tuning.fullname" . }}-dramatiq
     labels:
+        app: dramatiq
         app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
 spec:

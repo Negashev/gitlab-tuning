@@ -7,12 +7,14 @@ metadata:
     helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app: dramatiq
 spec:
   replicas: {{ .Values.dramatiq.replicaCount }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
+      app: dramatiq
   template:
     metadata:
       annotations:
@@ -22,6 +24,7 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+        app: dramatiq
     spec:
       volumes:
         - emptyDir:
