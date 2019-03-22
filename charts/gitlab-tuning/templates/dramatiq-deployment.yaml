@@ -34,8 +34,8 @@ spec:
         - name: {{ .Chart.Name }}-dramatiq
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ['dramatiq-gevent']
-          args:  ['tasks', '-p', '4', '-t', '100']
+          command: ['dramatiq']
+          args:  ['tasks']
           volumeMounts:
             - name: prometheus
               mountPath: /tmp/dramatiq-prometheus
