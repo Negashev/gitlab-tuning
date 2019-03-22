@@ -11,8 +11,8 @@ server:
       cpu: 100m
       memory: 128Mi
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 50m
+      memory: 36Mi
 dramatiq:
   gitlabToken: "your-secret-token"
   statisticUrl: "http://statistic.com/post-receive"
@@ -28,7 +28,7 @@ dramatiq:
       memory: 128Mi
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 90Mi
 env:
   GITLAB_URL: http://gitlab-unicorn.gitlab:8080
   LDAP_OBJECTCLASS_GROUP: group
