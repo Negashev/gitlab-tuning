@@ -22,6 +22,10 @@ dramatiq:
   ldapBase: 'DC=company,DC=com_by'
   environments:
   replicaCount: 2
+  hpa:
+    targetAverageValue:
+    minReplicas: 2
+    maxReplicas: 10
   resources:
     limits:
       cpu: 100m
