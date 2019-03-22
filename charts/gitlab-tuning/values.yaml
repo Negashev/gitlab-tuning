@@ -29,10 +29,10 @@ dramatiq:
   resources:
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 128Mi
     requests:
       cpu: 200m
-      memory: 160Mi
+      memory: 64Mi
 env:
   GITLAB_URL: http://gitlab-unicorn.gitlab:8080
   LDAP_OBJECTCLASS_GROUP: group
