@@ -1,1 +1,1 @@
-{!gitlab-tuning/readme.md!}
+@include "gitlab-tuning/readme.md"
