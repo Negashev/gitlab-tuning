@@ -1,5 +1,7 @@
 https://github.com/squeaky-pl/japronto/archive/master.zip
-dramatiq[rabbitmq, watch]
+dramatiq
+periodiq
 requests
 python-gitlab==1.8.0
 python-ldap
+Pillow

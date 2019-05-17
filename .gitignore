@@ -52,5 +52,6 @@ fabric.properties
 
 # Editor-based Rest Client
 .idea/httpRequests
-
+.idea
 gitlab-tuning/.env
+gitlab-tuning/__pycache__

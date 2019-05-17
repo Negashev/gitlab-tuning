@@ -1,12 +1,12 @@
 import os
 
 from japronto import Application
-from tasks import statistic_prepare_data, group_create
+from tasks import statistic_prepare_data, group_create, gitlab_user_create
 
 TOKEN = os.getenv("TOKEN", "Qwerty")
 app = Application()
 
-STATISTIC_URL = os.getenv("STATISTIC_URL", "http://statistic.com/post-receive")
+STATISTIC_URL = os.getenv("STATISTIC_URL")
 
 
 async def filter_hooks(request):
@@ -19,6 +19,9 @@ async def filter_hooks(request):
     if data['event_name'] == "repository_update":
         print(f"User {data['user_name']} push to {data['project']['git_ssh_url']}")
         statistic_prepare_data.send(data['project_id'], data['project']['git_ssh_url'], data['changes'])
+    if data['event_name'] == "user_create":
+        print(f"Created user {data['email']}, set avatar start add groups")
+        gitlab_user_create.send(data['id'])
     if data['event_name'] == "group_create":
         locations = data['full_path'].split('/')
         if len(locations) >= 2:

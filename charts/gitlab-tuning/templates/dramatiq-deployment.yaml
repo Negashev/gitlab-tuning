@@ -82,12 +82,18 @@ spec:
                   key: LDAP_BASE
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
+            - name: CRON_SYNC_AVATARS
+              valueFrom:
+                secretKeyRef:
+                  key: CRON_SYNC_AVATARS
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
             {{- range $key, $value := $.Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
           ports:
-            - name: prometheus
+            - name: http-prometheus
               containerPort: 9191
               protocol: TCP
           livenessProbe:

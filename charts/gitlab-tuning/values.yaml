@@ -20,6 +20,7 @@ dramatiq:
   ldapUser: 'Reader@company.com_by'
   ldapPass: 'password'
   ldapBase: 'DC=company,DC=com_by'
+  sync_avatars: '0 0 * * *'
   environments:
   replicaCount: 2
   hpa:
@@ -50,5 +51,3 @@ affinity: {}
 
 nameOverride: ""
 fullnameOverride: ""
-
-

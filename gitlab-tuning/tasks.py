@@ -3,13 +3,22 @@ import os
 import ldap
 import dramatiq
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
+from dramatiq.brokers.redis import RedisBroker
+from periodiq import PeriodicMiddleWare, cron
 import requests
 import gitlab
 
-broker = RabbitmqBroker(url=os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672"))
-dramatiq.set_broker(broker)
 
-STATISTIC_URL = os.getenv("STATISTIC_URL", "http://statistic.com/post-receive")
+from tools import resize_image
+REDIS_URL = os.getenv("REDIS_URL", None)
+if REDIS_URL in [None, ""]:
+    broker = RabbitmqBroker(url=os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672"))
+else:
+    broker = RedisBroker(url=REDIS_URL)
+dramatiq.set_broker(broker)
+broker.add_middleware(PeriodicMiddleWare())
+
+STATISTIC_URL = os.getenv("STATISTIC_URL", None)
 LDAP_URL = os.getenv('LDAP_URL', 'ldap://company.com_by:12345')
 LDAP_USER = os.getenv('LDAP_USER', 'Reader@company.com_by')
 LDAP_PASS = os.getenv('LDAP_PASS', 'PASS')
@@ -24,10 +33,14 @@ else:
     LDAP_GROUP_PREFIX = ''
 LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
+CRON_SYNC_AVATARS = os.getenv('CRON_SYNC_AVATARS', '0 0 * * *')
 
 
 @dramatiq.actor(priority=10, max_retries=2)
 def statistic_prepare_data(project_id, git_ssh_url, changes):
+    if STATISTIC_URL in [None, ""]:
+        print('STATISTIC_URL is not set')
+        return
     try:
         project = gl.projects.get(project_id)
     except gitlab.exceptions.GitlabGetError as e:
@@ -65,14 +78,14 @@ def get_ldap_owner_with_users(group_name):
     connect = ldap.initialize(LDAP_URL)
     connect.set_option(ldap.OPT_REFERRALS, 0)
     connect.simple_bind_s(LDAP_USER, LDAP_PASS)
-    r = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass=group)(CN={LDAP_GROUP_PREFIX}{group_name}))',
+    r = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_GROUP})(CN={LDAP_GROUP_PREFIX}{group_name}))',
                          ['cn', 'managedBy'])
     if not r:
         connect.unbind()
         return
     cn, entry = r[0]
     ldap_group_owner = entry['managedBy'][0].decode()
-    ldap_group_users = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass=user)(memberOf={cn}))',
+    ldap_group_users = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_USER})(memberOf={cn}))',
                                         ['cn', 'mail'])
     connect.unbind()
     return ldap_group_owner, ldap_group_users
@@ -124,3 +137,51 @@ def gitlab_remove_user_from_group(group_id, ldap_emails):
         if user.email not in ldap_emails:
             gitlab_group.members.delete(member['id'])
             print(f'User {user.email} remove from {gitlab_group.name}')
+
+
+@dramatiq.actor(priority=0, max_retries=3)
+def gitlab_user_create(user_id):
+    gitlab_user = gl.users.get(user_id)
+    connect = ldap.initialize(LDAP_URL)
+    connect.set_option(ldap.OPT_REFERRALS, 0)
+    connect.simple_bind_s(LDAP_USER, LDAP_PASS)
+    ldap_user = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_USER})(mail={gitlab_user.email}))',
+                                            ['cn', 'mail', 'thumbnailPhoto'])
+    connect.unbind()
+    if not ldap_user:
+        print(f'User {user.email} not found in ldap')
+        return
+    if 'thumbnailPhoto' in ldap_user[0][1]:
+        thumbnailPhoto = ldap_user[0][1]['thumbnailPhoto'][0]
+        gitlab_user.avatar = resize_image(thumbnailPhoto)
+        gitlab_user.save()
+        print(f'set avatar {user.email}')
+    else:
+        print(f'thumbnailPhoto not found for {user.email}')
+
+@dramatiq.actor(periodic=cron(CRON_SYNC_AVATARS))
+def gitlab_sync_avatars_prepare():
+    page = 1
+    while True:
+        users = gl.users.list(page=page, per_page=10, active=True)
+        if len(users)==0:
+            break
+        gitlab_sync_avatars.send(page)
+        page += 1
+
+@dramatiq.actor(priority=20, max_retries=3)
+def gitlab_sync_avatars(page):
+    connect = ldap.initialize(LDAP_URL)
+    connect.set_option(ldap.OPT_REFERRALS, 0)
+    connect.simple_bind_s(LDAP_USER, LDAP_PASS)
+    for user in gl.users.list(page=page, per_page=10, active=True):
+        ldap_user = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_USER})(mail={user.email}))',
+                                            ['cn', 'mail', 'thumbnailPhoto'])
+        if not ldap_user:
+            continue
+        if 'thumbnailPhoto' in ldap_user[0][1]:
+            thumbnailPhoto = ldap_user[0][1]['thumbnailPhoto'][0]
+            user.avatar = resize_image(thumbnailPhoto)
+            user.save()
+            print(f'set avatar {user.email}')
+    connect.unbind()

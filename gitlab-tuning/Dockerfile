@@ -4,18 +4,18 @@ WORKDIR /src
 
 RUN apk add --update python3
 RUN apk add --update openldap
+RUN apk add --update jpeg
 
 ADD requirements.txt ./
 
-RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip openldap-dev \
+RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip openldap-dev jpeg-dev zlib-dev \
     && pip3 --no-cache install -r requirements.txt \
 	&& apk del .build-deps \
 	&& rm -rf /var/cache/apk/*
 
 VOLUME /tmp/dramatiq-prometheus
 
-ENV STATISTIC_URL=http://statistic.com/post-receive \
-    RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672 \
+ENV RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672 \
     TOKEN=your-secret-token \
     prometheus_multiproc_dir=/tmp/dramatiq-prometheus \
     dramatiq_prom_db=/tmp/dramatiq-prometheus \
@@ -28,6 +28,7 @@ ENV STATISTIC_URL=http://statistic.com/post-receive \
     LDAP_OBJECTCLASS_GROUP=group \
     LDAP_OBJECTCLASS_USER=user \
     GITLAB_URL='https://gitlab.company.com_by' \
-    GITLAB_TOKEN=TOKEN
+    GITLAB_TOKEN=TOKEN \
+    CRON_SYNC_AVATARS='0 0 * * *'
 
 ADD *.py ./
