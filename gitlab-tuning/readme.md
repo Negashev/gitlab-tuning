@@ -2,7 +2,8 @@
 
 - auto add users with owner to new group
 - send `user, commit, repo, timestamp` to statistic server 
-
+- cron sync avatars from ldap
+- auto set avatar for new user
 
 ##### Fix old DB gitlab web_hooks table
 
