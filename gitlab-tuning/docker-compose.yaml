@@ -4,9 +4,14 @@ services:
     image: rabbitmq:management-alpine
     ports:
       - 15672:15672
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
   dramatiq:
     links:
       - rabbitmq
+      - redis
     build:
       context: .
     env_file:
@@ -14,9 +19,21 @@ services:
     volumes:
       - /tmp/dramatiq-prometheus
     command: ["dramatiq", "tasks"]
+  periodiq:
+    links:
+      - rabbitmq
+      - redis
+    build:
+      context: .
+    env_file:
+      - .env
+    volumes:
+      - /tmp/dramatiq-prometheus
+    command: ["periodiq", "tasks"]
   server:
     links:
       - rabbitmq
+      - redis
     build:
       context: .
     command: ["python3", "-um", "japronto", "run.app"]

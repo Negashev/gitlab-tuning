@@ -4,7 +4,7 @@ import ldap
 import dramatiq
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
 from dramatiq.brokers.redis import RedisBroker
-from periodiq import PeriodicMiddleWare, cron
+from periodiq import PeriodiqMiddleware, cron
 import requests
 import gitlab
 
@@ -16,7 +16,7 @@ if REDIS_URL in [None, ""]:
 else:
     broker = RedisBroker(url=REDIS_URL)
 dramatiq.set_broker(broker)
-broker.add_middleware(PeriodicMiddleWare())
+broker.add_middleware(PeriodiqMiddleware())
 
 STATISTIC_URL = os.getenv("STATISTIC_URL", None)
 LDAP_URL = os.getenv('LDAP_URL', 'ldap://company.com_by:12345')
@@ -159,7 +159,7 @@ def gitlab_user_create(user_id):
     else:
         print(f'thumbnailPhoto not found for {user.email}')
 
-@dramatiq.actor(periodic=cron(CRON_SYNC_AVATARS))
+@dramatiq.actor(priority=0, periodic=cron(CRON_SYNC_AVATARS))
 def gitlab_sync_avatars_prepare():
     page = 1
     while True:
@@ -181,7 +181,7 @@ def gitlab_sync_avatars(page):
             continue
         if 'thumbnailPhoto' in ldap_user[0][1]:
             thumbnailPhoto = ldap_user[0][1]['thumbnailPhoto'][0]
-            user.avatar = resize_image(thumbnailPhoto)
+            user.avatar, width, height = resize_image(thumbnailPhoto)
             user.save()
-            print(f'set avatar {user.email}')
+            print(f'set avatar ({width}x{height}) {user.email}')
     connect.unbind()

@@ -5,10 +5,11 @@ WORKDIR /src
 RUN apk add --update python3
 RUN apk add --update openldap
 RUN apk add --update jpeg
+RUN apk add --update libmemcached
 
 ADD requirements.txt ./
 
-RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip openldap-dev jpeg-dev zlib-dev \
+RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip openldap-dev jpeg-dev zlib-dev libmemcached-dev \
     && pip3 --no-cache install -r requirements.txt \
 	&& apk del .build-deps \
 	&& rm -rf /var/cache/apk/*
@@ -29,6 +30,7 @@ ENV RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672 \
     LDAP_OBJECTCLASS_USER=user \
     GITLAB_URL='https://gitlab.company.com_by' \
     GITLAB_TOKEN=TOKEN \
+    TZ=UTC \
     CRON_SYNC_AVATARS='0 0 * * *'
 
 ADD *.py ./

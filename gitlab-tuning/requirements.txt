@@ -1,5 +1,5 @@
 https://github.com/squeaky-pl/japronto/archive/master.zip
-dramatiq
+dramatiq[all]
 periodiq
 requests
 python-gitlab==1.8.0

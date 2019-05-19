@@ -8,7 +8,7 @@ def resize_image(thumbnailPhoto):
     _max = max(im.size)
     if _min == _max:
         # nothing to resize
-        return thumbnailPhoto
+        return thumbnailPhoto, width, height
     else:
         if height == _max:
             left = 0
@@ -23,5 +23,6 @@ def resize_image(thumbnailPhoto):
             bottom = height
             avatar = im.crop((left, top, right, bottom))
         b = io.BytesIO()
+        width, height = avatar.size
         avatar.save(b, 'PNG')
-        return b.getvalue()
+        return b.getvalue(), width, height
