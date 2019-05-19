@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gitlab-tuning.fullname" . }}-dramatiq
+  name: {{ include "gitlab-tuning.fullname" . }}-periodiq
   labels:
     app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
     helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app: dramatiq
+    app: periodiq
 spec:
-  replicas: {{ .Values.dramatiq.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app: dramatiq
+      app: periodiq
   template:
     metadata:
       annotations:
@@ -24,34 +24,22 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app: dramatiq
+        app: periodiq
     spec:
       volumes:
         - emptyDir:
             sizeLimit: 128Mi
           name: prometheus
       containers:
-        - name: {{ .Chart.Name }}-dramatiq
+        - name: {{ .Chart.Name }}-periodiq
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ['dramatiq']
+          command: ['periodiq']
           args:  ['tasks']
           volumeMounts:
             - name: prometheus
-              mountPath: /tmp/dramatiq-prometheus
+              mountPath: /tmp/periodiq-prometheus
           env:
-            - name: STATISTIC_URL
-              valueFrom:
-                secretKeyRef:
-                  key: STATISTIC_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: GITLAB_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  key: GITLAB_TOKEN
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
             {{- if .Values.rabbitmqUrl -}}
             - name: RABBITMQ_URL
               valueFrom:
@@ -68,28 +56,10 @@ spec:
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
             {{- else -}}
-            - name: LDAP_URL
+            - name: CRON_SYNC_AVATARS
               valueFrom:
                 secretKeyRef:
-                  key: LDAP_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: LDAP_USER
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_USER
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: LDAP_PASS
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_PASS
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: LDAP_BASE
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_BASE
+                  key: CRON_SYNC_AVATARS
                   name: {{ include "gitlab-tuning.fullname" . }}
                   optional: false
             {{- range $key, $value := $.Values.env }}
@@ -109,7 +79,7 @@ spec:
               path: /
               port: prometheus
           resources:
-            {{- toYaml .Values.dramatiq.resources | nindent 12 }}
+            {{- toYaml .Values.periodiq.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

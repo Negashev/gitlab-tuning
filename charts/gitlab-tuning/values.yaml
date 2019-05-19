@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 rabbitmqUrl: "amqp://guest:guest@rabbitmq:5672"
+redisUrl: ""
 server:
   token: "your-secret-token"
   replicaCount: 2
