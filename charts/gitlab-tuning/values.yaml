@@ -5,6 +5,7 @@
 rabbitmqUrl: "amqp://guest:guest@rabbitmq:5672"
 redisUrl: ""
 server:
+  enable: true
   token: "your-secret-token"
   replicaCount: 2
   resources:
@@ -14,7 +15,14 @@ server:
     requests:
       cpu: 50m
       memory: 36Mi
+periodiq:
+  enable: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 36Mi
 dramatiq:
+  enable: true
   gitlabToken: "your-secret-token"
   statisticUrl: "http://statistic.com/post-receive"
   ldapUrl: 'ldap://company.com_by:12345'
