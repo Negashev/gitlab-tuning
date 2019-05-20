@@ -54,6 +54,7 @@ image:
 service:
   type: ClusterIP
   port: 8080
+  # clusterIP: 10.x.x.x
 nodeSelector: {}
 tolerations: []
 affinity: {}
