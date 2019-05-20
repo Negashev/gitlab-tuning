@@ -54,13 +54,25 @@ spec:
               containerPort: 9191
               protocol: TCP
           livenessProbe:
+            failureThreshold: 3
             httpGet:
               path: /
               port: http-prometheus
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
           readinessProbe:
+            failureThreshold: 3
             httpGet:
               path: /
               port: http-prometheus
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
           resources:
             {{- toYaml .Values.dramatiq.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
