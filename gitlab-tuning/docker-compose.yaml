@@ -5,9 +5,11 @@ services:
     ports:
       - 15672:15672
   redis:
-    image: redis:alpine
+    image: eqalpha/keydb:x86_64_v0.9.5
     ports:
       - 6379:6379
+    entrypoint: keydb-server
+    command: ["/etc/keydb/redis.conf", "--port", "6379"]
   dramatiq:
     links:
       - rabbitmq
@@ -29,7 +31,7 @@ services:
       - .env
     volumes:
       - /tmp/dramatiq-prometheus
-    command: ["periodiq", "tasks"]
+    command: ["python3", "-u", "tasks0.py"]
   server:
     links:
       - rabbitmq

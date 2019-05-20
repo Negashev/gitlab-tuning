@@ -34,6 +34,7 @@ else:
 LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
 CRON_SYNC_AVATARS = os.getenv('CRON_SYNC_AVATARS', '0 0 * * *')
+CRON_AVATARS_PER_PAGE = int(os.getenv('CRON_AVATARS_PER_PAGE', '10'))
 
 
 @dramatiq.actor(priority=10, max_retries=2)
@@ -129,7 +130,7 @@ def gitlab_add_user_to_group(group_id, access_level, email):
 @dramatiq.actor(priority=10, max_retries=3)
 def gitlab_remove_user_from_group(group_id, ldap_emails):
     gitlab_group = gl.groups.get(group_id)
-    gitlab_members = gitlab_group.members.all(all=True)
+    gitlab_members = gitlab_group.members.all(as_list=False, all=True)
     for member in gitlab_members:
         user = gl.users.get(member['id'])
         if not user.email:
@@ -161,20 +162,17 @@ def gitlab_user_create(user_id):
 
 @dramatiq.actor(priority=0, max_retries=3, periodic=cron(CRON_SYNC_AVATARS))
 def gitlab_sync_avatars_prepare():
-    page = 1
-    while True:
-        users = gl.users.list(page=page, per_page=10, active=True)
-        if len(users)==0:
-            break
-        gitlab_sync_avatars.send(page)
-        page += 1
+    users = gl.users.list(as_list=False, per_page=CRON_AVATARS_PER_PAGE, active=True)
+    for i in range(1, users.total_pages+1):
+        gitlab_sync_avatars.send(i)
+    print(f'total_pages {users.total_pages}/{CRON_AVATARS_PER_PAGE}')
 
 @dramatiq.actor(priority=20, max_retries=3)
 def gitlab_sync_avatars(page):
     connect = ldap.initialize(LDAP_URL)
     connect.set_option(ldap.OPT_REFERRALS, 0)
     connect.simple_bind_s(LDAP_USER, LDAP_PASS)
-    for user in gl.users.list(page=page, per_page=10, active=True):
+    for user in gl.users.list(as_list=False, page=page, per_page=CRON_AVATARS_PER_PAGE, active=True):
         ldap_user = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_USER})(mail={user.email}))',
                                             ['cn', 'mail', 'thumbnailPhoto'])
         if not ldap_user:
