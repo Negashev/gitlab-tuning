@@ -1,4 +1,4 @@
-{{- if .Values.dramatiq.enable -}}
+{{- if .Values.dramatiq.enable }}
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
@@ -15,4 +15,4 @@ spec:
         kind: Deployment
         name: {{ include "gitlab-tuning.fullname" . }}-dramatiq
     targetCPUUtilizationPercentage: 80
-{{- end -}}
+{{- end }}

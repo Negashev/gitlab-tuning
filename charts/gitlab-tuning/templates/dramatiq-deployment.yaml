@@ -1,4 +1,4 @@
-{{- if .Values.dramatiq.enable -}}
+{{- if .Values.dramatiq.enable }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,59 +40,11 @@ spec:
           volumeMounts:
             - name: prometheus
               mountPath: /tmp/dramatiq-prometheus
+          envFrom:
+          - secretRef:
+              name: {{ include "gitlab-tuning.fullname" . }}
+              optional: false
           env:
-            - name: STATISTIC_URL
-              valueFrom:
-                secretKeyRef:
-                  key: STATISTIC_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: GITLAB_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  key: GITLAB_TOKEN
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            {{- if .Values.rabbitmqUrl -}}
-            - name: RABBITMQ_URL
-              valueFrom:
-                secretKeyRef:
-                  key: RABBITMQ_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            {{- else -}}
-            {{- if .Values.redisUrl -}}
-            - name: REDIS_URL
-              valueFrom:
-                secretKeyRef:
-                  key: REDIS_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            {{- else -}}
-            - name: LDAP_URL
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: LDAP_USER
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_USER
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: LDAP_PASS
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_PASS
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            - name: LDAP_BASE
-              valueFrom:
-                secretKeyRef:
-                  key: LDAP_BASE
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
             {{- range $key, $value := $.Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -123,4 +75,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-{{- end -}}
+{{- end }}

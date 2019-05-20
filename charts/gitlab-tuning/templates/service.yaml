@@ -1,4 +1,4 @@
-{{- if .Values.server.enable -}}
+{{- if .Values.server.enable }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -22,4 +22,4 @@ spec:
     app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app: server
-{{- end -}}
+{{- end }}

@@ -1,4 +1,4 @@
-{{- if .Values.periodiq.enable -}}
+{{- if .Values.periodiq.enable }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,29 +40,11 @@ spec:
           volumeMounts:
             - name: prometheus
               mountPath: /tmp/periodiq-prometheus
+          envFrom:
+          - secretRef:
+              name: {{ include "gitlab-tuning.fullname" . }}
+              optional: false
           env:
-            {{- if .Values.rabbitmqUrl -}}
-            - name: RABBITMQ_URL
-              valueFrom:
-                secretKeyRef:
-                  key: RABBITMQ_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            {{- else -}}
-            {{- if .Values.redisUrl -}}
-            - name: REDIS_URL
-              valueFrom:
-                secretKeyRef:
-                  key: REDIS_URL
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
-            {{- else -}}
-            - name: CRON_SYNC_AVATARS
-              valueFrom:
-                secretKeyRef:
-                  key: CRON_SYNC_AVATARS
-                  name: {{ include "gitlab-tuning.fullname" . }}
-                  optional: false
             {{- range $key, $value := $.Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -93,4 +75,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-{{- end -}}
+{{- end }}
