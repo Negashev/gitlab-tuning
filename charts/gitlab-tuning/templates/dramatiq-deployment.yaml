@@ -56,11 +56,11 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: prometheus
+              port: http-prometheus
           readinessProbe:
             httpGet:
               path: /
-              port: prometheus
+              port: http-prometheus
           resources:
             {{- toYaml .Values.dramatiq.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
