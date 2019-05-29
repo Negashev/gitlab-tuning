@@ -4,7 +4,6 @@ import ldap
 import dramatiq
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
 from dramatiq.brokers.redis import RedisBroker
-from periodiq import PeriodiqMiddleware, cron
 import requests
 import gitlab
 
@@ -16,7 +15,6 @@ if REDIS_URL in [None, ""]:
 else:
     broker = RedisBroker(url=REDIS_URL)
 dramatiq.set_broker(broker)
-broker.add_middleware(PeriodiqMiddleware())
 
 STATISTIC_URL = os.getenv("STATISTIC_URL", None)
 LDAP_URL = os.getenv('LDAP_URL', 'ldap://company.com_by:12345')
@@ -33,7 +31,6 @@ else:
     LDAP_GROUP_PREFIX = ''
 LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
-CRON_SYNC_AVATARS = os.getenv('CRON_SYNC_AVATARS', '0 0 * * *')
 CRON_AVATARS_PER_PAGE = int(os.getenv('CRON_AVATARS_PER_PAGE', '10'))
 
 
@@ -160,12 +157,6 @@ def gitlab_user_create(user_id):
     else:
         print(f'thumbnailPhoto not found for {user.email}')
 
-@dramatiq.actor(periodic=cron(CRON_SYNC_AVATARS))
-def gitlab_sync_avatars_prepare():
-    users = gl.users.list(as_list=False, per_page=CRON_AVATARS_PER_PAGE, active=True)
-    for i in range(1, users.total_pages+1):
-        gitlab_sync_avatars.send(i)
-    print(f'total_pages {users.total_pages}/{CRON_AVATARS_PER_PAGE}')
 
 @dramatiq.actor(priority=20, max_retries=3)
 def gitlab_sync_avatars(page):

@@ -5,7 +5,7 @@ services:
     ports:
       - 15672:15672
   redis:
-    image: eqalpha/keydb:x86_64_v0.9.5
+    image: eqalpha/keydb:unstable
     ports:
       - 6379:6379
     entrypoint: keydb-server
@@ -21,7 +21,7 @@ services:
     volumes:
       - /tmp/dramatiq-prometheus
     command: ["dramatiq", "tasks"]
-  periodiq:
+  cron:
     links:
       - rabbitmq
       - redis
@@ -29,9 +29,7 @@ services:
       context: .
     env_file:
       - .env
-    volumes:
-      - /tmp/dramatiq-prometheus
-    command: ["python3", "-u", "tasks0.py"]
+    command: ["python3", "-u", "cron.py"]
   server:
     links:
       - rabbitmq

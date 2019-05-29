@@ -29,8 +29,6 @@ ENV RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672 \
     LDAP_OBJECTCLASS_GROUP=group \
     LDAP_OBJECTCLASS_USER=user \
     GITLAB_URL='https://gitlab.company.com_by' \
-    GITLAB_TOKEN=TOKEN \
-    TZ=UTC \
-    CRON_SYNC_AVATARS='0 0 * * *'
+    GITLAB_TOKEN=TOKEN
 
 ADD *.py ./

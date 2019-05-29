@@ -1,6 +1,5 @@
 https://github.com/squeaky-pl/japronto/archive/master.zip
 dramatiq[all]
-periodiq
 requests
 python-gitlab==1.8.0
 python-ldap

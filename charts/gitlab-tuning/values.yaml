@@ -15,8 +15,9 @@ server:
     requests:
       cpu: 50m
       memory: 36Mi
-periodiq:
+cron:
   enable: true
+  schedule: "0 0 * * *"
   resources:
     requests:
       cpu: 50m
