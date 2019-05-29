@@ -160,7 +160,7 @@ def gitlab_user_create(user_id):
     else:
         print(f'thumbnailPhoto not found for {user.email}')
 
-@dramatiq.actor(priority=0, max_retries=3, periodic=cron(CRON_SYNC_AVATARS))
+@dramatiq.actor(periodic=cron(CRON_SYNC_AVATARS))
 def gitlab_sync_avatars_prepare():
     users = gl.users.list(as_list=False, per_page=CRON_AVATARS_PER_PAGE, active=True)
     for i in range(1, users.total_pages+1):
