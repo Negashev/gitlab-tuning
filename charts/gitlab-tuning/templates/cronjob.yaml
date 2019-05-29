@@ -10,41 +10,53 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app: cron
 spec:
-  schedule: {{ .Values.cron.schedule }}
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 10
   jobTemplate:
     spec:
       template:
         spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 8 }}
+          {{- end }}
+        {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
           containers:
-          - name: {{ .Chart.Name }}-cron
-            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-            imagePullPolicy: {{ .Values.image.pullPolicy }}
-            args:
+          - args:
             - python3
             - -u
             - cron.py
-          restartPolicy: OnFailure
-          envFrom:
-          - secretRef:
-              name: {{ include "gitlab-tuning.fullname" . }}
-              optional: false
-          env:
-            {{- range $key, $value := $.Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-          resources:
-            {{- toYaml .Values.cron.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-    {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-    {{- end }}
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            name: {{ .Chart.Name }}-cron
+            resources:
+              {{- toYaml .Values.cron.resources | nindent 14 }}
+            stdin: true
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            tty: true
+            envFrom:
+            - secretRef:
+                name: {{ include "gitlab-tuning.fullname" . }}
+                optional: false
+            env:
+              {{- range $key, $value := $.Values.env }}
+              - name: {{ $key }}
+                value: {{ $value | quote }}
+              {{- end }}
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+  schedule: {{ .Values.cron.schedule }}
+  successfulJobsHistoryLimit: 10
+  suspend: false
 {{- end }}
