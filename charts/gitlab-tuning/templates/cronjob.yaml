@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app: cron
 spec:
-  schedule: {{ .Values.cron.enable }}
+  schedule: {{ .Values.cron.schedule }}
   jobTemplate:
     spec:
       template:
