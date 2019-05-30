@@ -147,15 +147,15 @@ def gitlab_user_create(user_id):
                                             ['cn', 'mail', 'thumbnailPhoto'])
     connect.unbind()
     if not ldap_user:
-        print(f'User {user.email} not found in ldap')
+        print(f'User {gitlab_user.email} not found in ldap')
         return
     if 'thumbnailPhoto' in ldap_user[0][1]:
         thumbnailPhoto = ldap_user[0][1]['thumbnailPhoto'][0]
         gitlab_user.avatar = resize_image(thumbnailPhoto)
         gitlab_user.save()
-        print(f'set avatar {user.email}')
+        print(f'set avatar {gitlab_user.email}')
     else:
-        print(f'thumbnailPhoto not found for {user.email}')
+        print(f'thumbnailPhoto not found for {gitlab_user.email}')
 
 
 @dramatiq.actor(priority=20, max_retries=3)
