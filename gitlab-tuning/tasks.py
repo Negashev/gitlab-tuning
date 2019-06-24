@@ -17,6 +17,7 @@ else:
 dramatiq.set_broker(broker)
 
 STATISTIC_URL = os.getenv("STATISTIC_URL", None)
+STATISTIC_URL_TIMEOUT = int(os.getenv('STATISTIC_URL_TIMEOUT', '10'))
 LDAP_URL = os.getenv('LDAP_URL', 'ldap://company.com_by:12345')
 LDAP_USER = os.getenv('LDAP_USER', 'Reader@company.com_by')
 LDAP_PASS = os.getenv('LDAP_PASS', 'PASS')
@@ -68,7 +69,7 @@ def statistic_prepare_data(project_id, git_ssh_url, changes):
 
 @dramatiq.actor(priority=20, max_retries=3)
 def statistic_push_data(data):
-    requests.post(STATISTIC_URL, data=data)
+    requests.post(STATISTIC_URL, data=data, timeout=STATISTIC_URL_TIMEOUT)
     print(f"commit {data['id']} by {data['author_email']} in {data['repository']}")
 
 
