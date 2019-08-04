@@ -6,6 +6,7 @@ from dramatiq.brokers.rabbitmq import RabbitmqBroker
 from dramatiq.brokers.redis import RedisBroker
 import requests
 import gitlab
+import time
 
 
 from tools import resize_image
@@ -172,6 +173,7 @@ def gitlab_sync_avatars(page):
         if 'thumbnailPhoto' in ldap_user[0][1]:
             thumbnailPhoto = ldap_user[0][1]['thumbnailPhoto'][0]
             user.avatar, width, height = resize_image(thumbnailPhoto)
+            time.sleep(0.5)
             user.save()
             print(f'set avatar ({width}x{height}) {user.email}')
     connect.unbind()
