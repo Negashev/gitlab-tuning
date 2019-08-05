@@ -165,6 +165,7 @@ def gitlab_sync_avatars(page):
     connect = ldap.initialize(LDAP_URL)
     connect.set_option(ldap.OPT_REFERRALS, 0)
     connect.simple_bind_s(LDAP_USER, LDAP_PASS)
+    time.sleep(0.5)
     for user in gl.users.list(as_list=False, page=page, per_page=CRON_AVATARS_PER_PAGE, active=True):
         ldap_user = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_USER})(mail={user.email}))',
                                             ['cn', 'mail', 'thumbnailPhoto'])
