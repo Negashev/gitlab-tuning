@@ -16,6 +16,7 @@ async def filter_hooks(request):
 
     data = request.json
     # filter tasks
+    print(f"Event name {data['event_name']}")
     if data['event_name'] == "repository_update":
         print(f"User {data['user_name']} push to {data['project']['git_ssh_url']}")
         statistic_prepare_data.send(data['project_id'], data['project']['git_ssh_url'], data['changes'])
