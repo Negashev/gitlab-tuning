@@ -7,7 +7,7 @@ TOKEN = os.getenv("TOKEN", "Qwerty")
 app = Application()
 
 STATISTIC_URL = os.getenv("STATISTIC_URL")
-IGNORE_EVENTS = os.getenv("IGNORE_EVENTS").split(',')
+IGNORE_EVENTS = os.getenv("IGNORE_EVENTS", "").split(',')
 
 
 async def filter_hooks(request):
