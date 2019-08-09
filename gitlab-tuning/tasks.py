@@ -49,7 +49,7 @@ def statistic_prepare_data(project_id, git_ssh_url, changes):
         else:
             raise gitlab.exceptions.GitlabGetError
     for change in changes:
-        time.sleep(2)
+        time.sleep(1)
         commits = project.commits.list(query_parameters={'ref_name': change['after']}, per_page=50)
         change['after'] = commits[-1].id
         exit_recursion = False
@@ -66,7 +66,7 @@ def statistic_prepare_data(project_id, git_ssh_url, changes):
             })
         # recursion
         if len(commits) > 1 and not exit_recursion:
-            time.sleep(2)
+            time.sleep(1)
             statistic_prepare_data.send(project_id, git_ssh_url, [change])
 
 
@@ -164,7 +164,7 @@ def gitlab_user_create(user_id):
 
 @dramatiq.actor(priority=20, max_retries=3)
 def gitlab_sync_avatars(page):
-    time.sleep(2)
+    time.sleep(1)
     connect = ldap.initialize(LDAP_URL)
     connect.set_option(ldap.OPT_REFERRALS, 0)
     connect.simple_bind_s(LDAP_USER, LDAP_PASS)
