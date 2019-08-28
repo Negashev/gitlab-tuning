@@ -1,7 +1,7 @@
 import os
 
 from japronto import Application
-from tasks import statistic_prepare_data, group_create, gitlab_user_create
+from tasks import statistic_prepare_data, group_create, gitlab_user_create, access_to_project
 
 TOKEN = os.getenv("TOKEN", "Qwerty")
 app = Application()
@@ -23,6 +23,9 @@ async def filter_hooks(request):
     if data['event_name'] == "repository_update":
         print(f"User {data['user_name']} push to {data['project']['git_ssh_url']}")
         statistic_prepare_data.send(data['project_id'], data['project']['git_ssh_url'], data['changes'])
+    if data['event_name'] in ["project_update", "project_create"]:
+        print(f"Projects {data['path_with_namespace']} create/update")
+        statistic_prepare_data.send(data['project_id'])
     if data['event_name'] == "user_create":
         print(f"Created user {data['email']}, set avatar start add groups")
         gitlab_user_create.send(data['id'])

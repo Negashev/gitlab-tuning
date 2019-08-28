@@ -17,7 +17,8 @@ server:
       memory: 36Mi
 cron:
   enable: true
-  schedule: "0 0 * * *"
+  schedule_gitlab_sync_avatars_prepare: "0 0 * * *"
+  schedule_access_to_project: "0 1 * * *"
   resources:
     requests:
       cpu: 50m
@@ -30,7 +31,6 @@ dramatiq:
   ldapUser: 'Reader@company.com_by'
   ldapPass: 'password'
   ldapBase: 'DC=company,DC=com_by'
-  sync_avatars: '0 0 * * *'
   environments:
   replicaCount: 2
   hpa:

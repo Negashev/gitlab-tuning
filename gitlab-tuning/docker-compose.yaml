@@ -5,7 +5,7 @@ services:
     ports:
       - 15672:15672
   redis:
-    image: eqalpha/keydb:unstable
+    image: eqalpha/keydb:x86_64_v5.0.1
     ports:
       - 6379:6379
     entrypoint: keydb-server

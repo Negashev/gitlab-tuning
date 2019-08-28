@@ -2,13 +2,13 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: {{ include "gitlab-tuning.fullname" . }}-cron
+  name: {{ include "gitlab-tuning.fullname" . }}-gitlab-sync-avatars-prepare
   labels:
     app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
     helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app: cron
+    app: gitlab-sync-avatars-prepare
 spec:
   concurrencyPolicy: Allow
   failedJobsHistoryLimit: 10
@@ -28,10 +28,10 @@ spec:
           - args:
             - python3
             - -u
-            - cron.py
+            - cron_gitlab_sync_avatars_prepare.py
             image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
-            name: {{ .Chart.Name }}-cron
+            name: {{ .Chart.Name }}-gitlab-sync-avatars-prepare
             resources:
               {{- toYaml .Values.cron.resources | nindent 14 }}
             stdin: true
@@ -52,7 +52,64 @@ spec:
           schedulerName: default-scheduler
           securityContext: {}
           terminationGracePeriodSeconds: 30
-  schedule: {{ .Values.cron.schedule }}
+  schedule: {{ .Values.cron.schedule_gitlab_sync_avatars_prepare }}
+  successfulJobsHistoryLimit: 10
+  suspend: false
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ include "gitlab-tuning.fullname" . }}-access-to-project
+  labels:
+    app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
+    helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app: access-to-project
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      template:
+        spec:
+        {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+          containers:
+          - args:
+            - python3
+            - -u
+            - cron_access_to_project.py
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            name: {{ .Chart.Name }}-access-to-project
+            resources:
+              {{- toYaml .Values.cron.resources | nindent 14 }}
+            stdin: true
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            tty: true
+            envFrom:
+            - secretRef:
+                name: {{ include "gitlab-tuning.fullname" . }}
+                optional: false
+            env:
+              {{- range $key, $value := $.Values.env }}
+              - name: {{ $key }}
+                value: {{ $value | quote }}
+              {{- end }}
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+  schedule: {{ .Values.cron.access_to_project }}
   successfulJobsHistoryLimit: 10
   suspend: false
 {{- end }}

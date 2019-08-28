@@ -34,6 +34,8 @@ else:
 LDAP_OBJECTCLASS_GROUP = os.getenv('LDAP_OBJECTCLASS_GROUP', 'group')
 LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
 CRON_AVATARS_PER_PAGE = int(os.getenv('CRON_AVATARS_PER_PAGE', '10'))
+CRON_PROJECTS_PER_PAGE = int(os.getenv('CRON_PROJECTS_PER_PAGE', '10'))
+ACCESS_PROJECT_STARTSWITH = os.getenv('ACCESS_PROJECT_STARTSWITH', 'group')
 
 
 @dramatiq.actor(priority=10, max_retries=2)
@@ -84,7 +86,7 @@ def get_ldap_owner_with_users(group_name):
                          ['cn', 'managedBy'])
     if not r:
         connect.unbind()
-        return
+        return None, []
     cn, entry = r[0]
     ldap_group_owner = entry['managedBy'][0].decode()
     ldap_group_users = connect.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE, f'(&(objectClass={LDAP_OBJECTCLASS_USER})(memberOf={cn}))',
@@ -120,6 +122,35 @@ def gitlab_add_user_to_group(group_id, access_level, email):
     group = gl.groups.get(group_id)
     try:
         group.members.create({'user_id': gitlab_user[0].id,
+                              'access_level': access_level})
+        print(f'User {email} added to {group.name} access_level: {access_level}')
+    except gitlab.exceptions.GitlabHttpError as e:
+        print(f'User {email} not added to {group.name} ==> {e}')
+    except gitlab.exceptions.GitlabCreateError as e:
+        print(f'User {email} not added to {group.name} ==> {e}')
+
+
+@dramatiq.actor(priority=0, max_retries=3)
+def access_to_project(project_id):
+    project = gl.project.get(project_id)
+    lines = project.description.splitlines()
+    for line in lines:
+        if line.startswith(f'{ACCESS_PROJECT_STARTSWITH} '):
+            group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH} ').sub('', line)
+            ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
+            for ldap_user in ldap_group_users:
+                email = ldap_user[1]['mail'][0].decode().lower()
+                gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, email)
+
+@dramatiq.actor(priority=10, max_retries=3)
+def gitlab_add_user_to_project(project_id, access_level, email):
+    gitlab_user = gl.users.list(search=email)
+    if not gitlab_user:
+        print(f'User {email} not found')
+        return
+    project = gl.project.get(project_id)
+    try:
+        project.members.create({'user_id': gitlab_user[0].id,
                               'access_level': access_level})
         print(f'User {email} added to {group.name} access_level: {access_level}')
     except gitlab.exceptions.GitlabHttpError as e:
