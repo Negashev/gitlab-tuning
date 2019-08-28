@@ -2,12 +2,12 @@ import time
 from tasks import gl, CRON_PROJECTS_PER_PAGE, access_to_project
 
 print(f'run access_to_project')
-projects = gl.projects.list(as_list=False, per_page=CRON_PROJECTS_PER_PAGE, active=True)
-for i in range(1, projects.total_pages+1):
+projects = gl.projects.list(as_list=False, per_page=CRON_PROJECTS_PER_PAGE)
+for i in projects:
     condition = True
     while condition:
         try:
-            access_to_project.send(i)
+            access_to_project.send(i.id)
             condition = False
         except Exception as e:
             print(f'sleep 5 second, error for id {i}: {e}')

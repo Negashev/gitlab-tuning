@@ -1,4 +1,5 @@
 import os
+import re
 
 import ldap
 import dramatiq
@@ -132,9 +133,11 @@ def gitlab_add_user_to_group(group_id, access_level, email):
 
 @dramatiq.actor(priority=0, max_retries=3)
 def access_to_project(project_id):
-    project = gl.project.get(project_id)
-    lines = project.description.splitlines()
-    for line in lines:
+    project = gl.projects.get(project_id)
+    description = project.description
+    if description is None:
+        return
+    for line in description.splitlines():
         if line.startswith(f'{ACCESS_PROJECT_STARTSWITH} '):
             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH} ').sub('', line)
             ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
@@ -148,15 +151,15 @@ def gitlab_add_user_to_project(project_id, access_level, email):
     if not gitlab_user:
         print(f'User {email} not found')
         return
-    project = gl.project.get(project_id)
+    project = gl.projects.get(project_id)
     try:
         project.members.create({'user_id': gitlab_user[0].id,
                               'access_level': access_level})
-        print(f'User {email} added to {group.name} access_level: {access_level}')
+        print(f'User {email} added to {project.name} access_level: {access_level}')
     except gitlab.exceptions.GitlabHttpError as e:
-        print(f'User {email} not added to {group.name} ==> {e}')
+        print(f'User {email} not added to {project.name} ==> {e}')
     except gitlab.exceptions.GitlabCreateError as e:
-        print(f'User {email} not added to {group.name} ==> {e}')
+        print(f'User {email} not added to {project.name} ==> {e}')
 
 
 @dramatiq.actor(priority=10, max_retries=3)

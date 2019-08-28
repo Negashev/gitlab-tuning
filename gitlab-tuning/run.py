@@ -25,7 +25,7 @@ async def filter_hooks(request):
         statistic_prepare_data.send(data['project_id'], data['project']['git_ssh_url'], data['changes'])
     if data['event_name'] in ["project_update", "project_create"]:
         print(f"Projects {data['path_with_namespace']} create/update")
-        statistic_prepare_data.send(data['project_id'])
+        access_to_project.send(data['project_id'])
     if data['event_name'] == "user_create":
         print(f"Created user {data['email']}, set avatar start add groups")
         gitlab_user_create.send(data['id'])
