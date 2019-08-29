@@ -109,7 +109,7 @@ spec:
           schedulerName: default-scheduler
           securityContext: {}
           terminationGracePeriodSeconds: 30
-  schedule: {{ .Values.cron.access_to_project }}
+  schedule: {{ .Values.cron.schedule_access_to_project }}
   successfulJobsHistoryLimit: 10
   suspend: false
 {{- end }}
