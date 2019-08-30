@@ -103,7 +103,11 @@ def group_create(group_name, group_id):
     ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
     ldap_emails = []
     for ldap_user in ldap_group_users:
-        email = ldap_user[1]['mail'][0].decode().lower()
+        try:
+            email = ldap_user[1]['mail'][0].decode().lower()
+        except Exception as e:
+            print(e)
+            continue
         ldap_emails.append(email)
         access_level = gitlab.DEVELOPER_ACCESS
         if ldap_user[0] == ldap_group_owner:
@@ -145,8 +149,11 @@ def access_to_project(project_id):
             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
             ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
             for ldap_user in ldap_group_users:
-                email = ldap_user[1]['mail'][0].decode().lower()
-                gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, email)
+                try:
+                    email = ldap_user[1]['mail'][0].decode().lower()
+                    gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, email)
+                except Exception as e:
+                    print(e)
 
 @dramatiq.actor(priority=10, max_retries=3)
 def gitlab_add_user_to_project(project_id, access_level, email):
