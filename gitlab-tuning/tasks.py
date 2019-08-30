@@ -37,7 +37,9 @@ LDAP_OBJECTCLASS_USER = os.getenv('LDAP_OBJECTCLASS_USER', 'user')
 CRON_AVATARS_PER_PAGE = int(os.getenv('CRON_AVATARS_PER_PAGE', '10'))
 CRON_PROJECTS_PER_PAGE = int(os.getenv('CRON_PROJECTS_PER_PAGE', '10'))
 ACCESS_PROJECT_STARTSWITH = os.getenv('ACCESS_PROJECT_STARTSWITH', 'group')
-
+ACCESS_PROJECT_DELIMITER = os.getenv('ACCESS_PROJECT_DELIMITER', None)
+if ACCESS_PROJECT_DELIMITER is None:
+    ACCESS_PROJECT_DELIMITER = ' '
 
 @dramatiq.actor(priority=10, max_retries=2)
 def statistic_prepare_data(project_id, git_ssh_url, changes):
@@ -138,8 +140,9 @@ def access_to_project(project_id):
     if description is None:
         return
     for line in description.splitlines():
-        if line.startswith(f'{ACCESS_PROJECT_STARTSWITH} '):
-            group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH} ').sub('', line)
+        if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
+            # TODO regexp problems? maybe remove from start bu 'len'?
+            group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
             ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
             for ldap_user in ldap_group_users:
                 email = ldap_user[1]['mail'][0].decode().lower()
