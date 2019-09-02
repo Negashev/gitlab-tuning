@@ -28,7 +28,7 @@ async def filter_hooks(request):
         access_to_project.send(data['project_id'])
     if data['event_name'] == "user_create":
         print(f"Created user {data['email']}, set avatar start add groups")
-        gitlab_user_create.send(data['id'])
+        gitlab_user_create.send(data['user_id'])
     if data['event_name'] == "group_create":
         locations = data['full_path'].split('/')
         if len(locations) >= 2:
