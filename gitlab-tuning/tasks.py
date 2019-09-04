@@ -199,7 +199,7 @@ def gitlab_user_create(user_id):
         return
     if 'thumbnailPhoto' in ldap_user[0][1]:
         thumbnailPhoto = ldap_user[0][1]['thumbnailPhoto'][0]
-        gitlab_user.avatar = resize_image(thumbnailPhoto)
+        gitlab_user.avatar, width, height = resize_image(thumbnailPhoto)
         gitlab_user.save()
         print(f'set avatar {gitlab_user.email}')
     else:
