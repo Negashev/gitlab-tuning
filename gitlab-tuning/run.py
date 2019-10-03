@@ -1,13 +1,19 @@
 import os
+import re
+import gitlab
+import datetime
 
 from japronto import Application
-from tasks import statistic_prepare_data, group_create, gitlab_user_create, access_to_project
+from tasks import statistic_prepare_data, group_create, gitlab_user_create, access_to_project, CRON_PROJECTS_PER_PAGE, \
+    ACCESS_PROJECT_STARTSWITH, ACCESS_PROJECT_DELIMITER, GITLAB_URL
 
 TOKEN = os.getenv("TOKEN", "Qwerty")
 app = Application()
 
 STATISTIC_URL = os.getenv("STATISTIC_URL")
 IGNORE_EVENTS = os.getenv("IGNORE_EVENTS", "").split(',')
+GET_ALL_ACTIVE_PROJECTS = os.getenv("GET_ALL_ACTIVE_PROJECTS", "/get_all_projects")
+GET_ALL_ACTIVE_PROJECTS_DAYS = int(os.getenv("GET_ALL_ACTIVE_PROJECTS_DAYS", "30"))
 
 
 async def filter_hooks(request):
@@ -41,13 +47,34 @@ async def filter_hooks(request):
 async def get_info(request):
     return request.Response(
         text=f"- Push commits in queue to {STATISTIC_URL}\n"
-        "- Auto add users(developers) with owner to new gitlab group\n"
-        "Use POST with X-Gitlab-Token and X-Gitlab-Event headers"
+             "- Auto add users(developers) with owner to new gitlab group\n"
+             "Use POST with X-Gitlab-Token and X-Gitlab-Event headers"
     )
+
+
+async def get_all_active_projects(request):
+    data = []
+    date_now = datetime.datetime.now() - datetime.timedelta(days=GET_ALL_ACTIVE_PROJECTS_DAYS)
+    if 'private_token' not in request.query.keys():
+        return request.Response(json=data)
+    gl = gitlab.Gitlab(GITLAB_URL, private_token=request.query['private_token'])
+    projects = gl.projects.list(as_list=False, per_page=100, order_by='last_activity_at', sort='desc', simple='true')
+    for project in projects:
+        if date_now > datetime.datetime.strptime(project.last_activity_at, "%Y-%m-%dT%H:%M:%S.%fZ"):
+            break
+        group_name = ""
+        description = project.description
+        if description is not None:
+            for line in description.splitlines():
+                if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
+                    group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
+        data.append({ACCESS_PROJECT_STARTSWITH.lower(): group_name.lower(), "path_with_namespace": project.path_with_namespace})
+    return request.Response(json=data)
 
 
 r = app.router
 r.add_route('/', get_info, methods=["GET"])
 r.add_route('/', filter_hooks, methods=["POST"])
+r.add_route(GET_ALL_ACTIVE_PROJECTS, get_all_active_projects, methods=["GET"])
 
 app.run()

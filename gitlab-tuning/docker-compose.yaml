@@ -1,9 +1,9 @@
 version: '2'
 services:
-  rabbitmq:
-    image: rabbitmq:management-alpine
-    ports:
-      - 15672:15672
+  # rabbitmq:
+  #   image: rabbitmq:management-alpine
+  #   ports:
+  #     - 15672:15672
   redis:
     image: eqalpha/keydb:x86_64_v5.0.1
     ports:
@@ -12,7 +12,7 @@ services:
     command: ["/etc/keydb/redis.conf", "--port", "6379"]
   dramatiq:
     links:
-      - rabbitmq
+      # - rabbitmq
       - redis
     build:
       context: .
@@ -21,21 +21,23 @@ services:
     volumes:
       - /tmp/dramatiq-prometheus
     command: ["dramatiq", "tasks"]
-  cron:
-    links:
-      - rabbitmq
-      - redis
-    build:
-      context: .
-    env_file:
-      - .env
-    command: ["python3", "-u", "cron_gitlab_sync_avatars_prepare.py"]
+  # cron:
+  #   links:
+  #     - rabbitmq
+  #     - redis
+  #   build:
+  #     context: .
+  #   env_file:
+  #     - .env
+  #   command: ["python3", "-u", "cron_gitlab_sync_avatars_prepare.py"]
   server:
     links:
-      - rabbitmq
+      # - rabbitmq
       - redis
     build:
       context: .
+    volumes:
+      - ./:/src
     command: ["python3", "-um", "japronto", "run.app"]
     env_file:
       - .env
