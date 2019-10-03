@@ -63,18 +63,17 @@ async def get_all_active_projects(request):
         if date_now > datetime.datetime.strptime(project.last_activity_at, "%Y-%m-%dT%H:%M:%S.%fZ"):
             break
         group_name = ""
-        if project.namespace['kind'] == 'group':
+        description = project.description
+        if description is not None:
+            for line in description.splitlines():
+                if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
+                    group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
+                    # exist and use first group code
+                    break
+        if group_name == "" and project.namespace['kind'] == 'group':
             locations = project.namespace['full_path'].split('/')
             if len(locations) >= 1:
                 group_name = locations[0]
-        else:
-            description = project.description
-            if description is not None:
-                for line in description.splitlines():
-                    if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
-                        group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
-                        # exist and use first group code
-                        break
         if group_name != "":
             data.append({ACCESS_PROJECT_STARTSWITH.lower(): group_name.lower(), "path_with_namespace": project.path_with_namespace})
     return request.Response(json=data)
