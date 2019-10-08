@@ -19,6 +19,7 @@ cron:
   enable: true
   schedule_gitlab_sync_avatars_prepare: "0 0 * * *"
   schedule_access_to_project: "0 1 * * *"
+  schedule_admin_group_clean: "0 */3 * * *"
   resources:
     requests:
       cpu: 50m

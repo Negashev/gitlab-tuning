@@ -112,4 +112,61 @@ spec:
   schedule: {{ .Values.cron.schedule_access_to_project }}
   successfulJobsHistoryLimit: 10
   suspend: false
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ include "gitlab-tuning.fullname" . }}-admin-group-clean
+  labels:
+    app.kubernetes.io/name: {{ include "gitlab-tuning.name" . }}
+    helm.sh/chart: {{ include "gitlab-tuning.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app: admin-group-clean
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      template:
+        spec:
+        {{- with .Values.affinity }}
+        affinity:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.tolerations }}
+        tolerations:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        containers:
+          - args:
+              - python3
+              - -u
+              - cron_admin_group_clean.py
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            name: {{ .Chart.Name }}-admin-group-clean
+            resources:
+              {{- toYaml .Values.cron.resources | nindent 14 }}
+            stdin: true
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            tty: true
+            envFrom:
+              - secretRef:
+                  name: {{ include "gitlab-tuning.fullname" . }}
+                  optional: false
+            env:
+              {{- range $key, $value := $.Values.env }}
+              - name: {{ $key }}
+                value: {{ $value | quote }}
+              {{- end }}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Never
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  schedule: {{ .Values.cron.schedule_admin_group_clean }}
+  successfulJobsHistoryLimit: 10
+  suspend: false
 {{- end }}
