@@ -15,8 +15,8 @@ for ldap_user in ldap_group_users:
 gitlab_users = gl.users.list(as_list=False, per_page=100)
 for user in gitlab_users:
     if user.is_admin:
-        print(f"check {user.name}")
+        print(f"check {user.name} ({user.email})")
         if user.email not in ldap_emails:
             print(f"{user.email} remove admin roles")
-            user.is_admin = False
+            user.admin = False
             user.save()
