@@ -16,7 +16,7 @@ GET_ALL_ACTIVE_PROJECTS = os.getenv("GET_ALL_ACTIVE_PROJECTS", "/get_all_project
 GET_ALL_ACTIVE_PROJECTS_DAYS = int(os.getenv("GET_ALL_ACTIVE_PROJECTS_DAYS", "30"))
 
 
-async def filter_hooks(request):
+def filter_hooks(request):
     # validate hook
     if request.headers['X-Gitlab-Token'] != TOKEN:
         return request.Response(code=401, text="Please use valid X-Gitlab-Token")
@@ -44,7 +44,7 @@ async def filter_hooks(request):
     return request.Response(text="OK")
 
 
-async def get_info(request):
+def get_info(request):
     return request.Response(
         text=f"- Push commits in queue to {STATISTIC_URL}\n"
              "- Auto add users(developers) with owner to new gitlab group\n"
@@ -52,7 +52,7 @@ async def get_info(request):
     )
 
 
-async def get_all_active_projects(request):
+def get_all_active_projects(request):
     data = []
     date_now = datetime.datetime.now() - datetime.timedelta(days=GET_ALL_ACTIVE_PROJECTS_DAYS)
     if 'private_token' not in request.query.keys():

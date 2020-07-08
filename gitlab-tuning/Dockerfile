@@ -9,7 +9,7 @@ RUN apk add --update libmemcached
 
 ADD requirements.txt ./
 
-RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip openldap-dev jpeg-dev zlib-dev libmemcached-dev \
+RUN apk add --no-cache --virtual .build-deps build-base python3-dev py3-pip openldap-dev libffi-dev jpeg-dev zlib-dev libmemcached-dev \
     && pip3 --no-cache install -r requirements.txt \
 	&& apk del .build-deps \
 	&& rm -rf /var/cache/apk/*
