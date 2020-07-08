@@ -152,7 +152,7 @@ def access_to_project(project_id):
           if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
              group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
              ADD_LDAP_GROUP.append(group_name)
-          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and line.endswith('{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}'):
+          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and line.endswith(f'{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}'):
              group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
              RESTRICTED_LDAP_GROUP.append(group_name)
     if ADD_LDAP_GROUP is []:
