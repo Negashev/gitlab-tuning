@@ -160,8 +160,8 @@ def access_to_project(project_id):
     # create emails array for adding
     users_to_add = []
     for i in ADD_LDAP_GROUP:
-      ldap_group_users = get_ldap_owner_with_users(i)
-      for ldap_user in ldap_group_users:
+        ldap_group_users = get_ldap_owner_with_users(i)
+        for ldap_user in ldap_group_users:
             try:
                 email = ldap_user[1]['mail'][0].decode().lower
                 if email not in users_to_add:
@@ -171,8 +171,8 @@ def access_to_project(project_id):
     # create emails array for restricted
     users_to_restricted = []
     for i in RESTRICTED_LDAP_GROUP:
-      ldap_group_users = get_ldap_owner_with_users(i)
-      for ldap_user in ldap_group_users:
+        ldap_group_users = get_ldap_owner_with_users(i)
+        for ldap_user in ldap_group_users:
             try:
                 email = ldap_user[1]['mail'][0].decode().lower
                 if email not in users_to_restricted:
@@ -183,7 +183,7 @@ def access_to_project(project_id):
     current_project_members = []
     members = project.members.all(as_list=False, all=True, per_page=CRON_PROJECTS_PER_PAGE)
     for member in members:
-      current_project_members.append(member.email)
+        current_project_members.append(member.email)
     # add new ldap users in project
     [gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, x) for x in users_to_add if x not in current_project_members]
     # if we need to restrict users
