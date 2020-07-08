@@ -148,22 +148,23 @@ def access_to_project(project_id):
     ADD_LDAP_GROUP=[]
     RESTRICTED_LDAP_GROUP=[]
     for line in description.splitlines():
-        for line in description.splitlines():
-          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
-             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
-             ADD_LDAP_GROUP.append(group_name)
-          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and line.endswith(f'{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}'):
-             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
-             RESTRICTED_LDAP_GROUP.append(group_name)
-    if ADD_LDAP_GROUP is []:
+        if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
+            group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
+            if group_name not in ADD_LDAP_GROUP:
+                ADD_LDAP_GROUP.append(group_name)
+        if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and line.endswith(f'{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}'):
+            group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
+            if group_name not in RESTRICTED_LDAP_GROUP:
+                RESTRICTED_LDAP_GROUP.append(group_name)
+    if ADD_LDAP_GROUP == []:
         return
     # create emails array for adding
     users_to_add = []
     for i in ADD_LDAP_GROUP:
-        ldap_group_users = get_ldap_owner_with_users(i)
+        ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(i)
         for ldap_user in ldap_group_users:
             try:
-                email = ldap_user[1]['mail'][0].decode().lower
+                email = ldap_user[1]['mail'][0].decode().lower()
                 if email not in users_to_add:
                     users_to_add.append(email)
             except Exception as e:
@@ -171,10 +172,10 @@ def access_to_project(project_id):
     # create emails array for restricted
     users_to_restricted = []
     for i in RESTRICTED_LDAP_GROUP:
-        ldap_group_users = get_ldap_owner_with_users(i)
+        ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(i)
         for ldap_user in ldap_group_users:
             try:
-                email = ldap_user[1]['mail'][0].decode().lower
+                email = ldap_user[1]['mail'][0].decode().lower()
                 if email not in users_to_restricted:
                     users_to_restricted.append(email)
             except Exception as e:
@@ -183,11 +184,17 @@ def access_to_project(project_id):
     current_project_members = []
     members = project.members.all(as_list=False, all=True, per_page=CRON_PROJECTS_PER_PAGE)
     for member in members:
-        current_project_members.append(member.email)
+        try:
+            user = gl.users.get(member['id'])
+            current_project_members.append(user.email)
+        except Exception as e:
+            print(e)
     # add new ldap users in project
     [gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, x) for x in users_to_add if x not in current_project_members]
     # if we need to restrict users
-    if users_to_restricted is not []:
+    if RESTRICTED_LDAP_GROUP == []:
+        return
+    if users_to_restricted != []:
         [gitlab_remove_user_from_project.send(project_id, x) for x in current_project_members if x not in users_to_restricted]
     
 
@@ -215,10 +222,12 @@ def gitlab_remove_user_from_project(project_id, email):
         return
     project = gl.projects.get(project_id)
     try:
-        project.members.delete({'user_id': gitlab_user[0].id)
+        project.members.delete(gitlab_user[0].id)
         print(f'User {email} removed from {project.name}')
     except gitlab.exceptions.GitlabHttpError as e:
         print(f'User {email} not removed from {project.name} ==> {e}')
+    except gitlab.exceptions.GitlabDeleteError as e:
+        print(f'User {email} not removed from {project.name} ==> {e}')        
 
 @dramatiq.actor(priority=10, max_retries=3)
 def gitlab_remove_user_from_group(group_id, ldap_emails):
