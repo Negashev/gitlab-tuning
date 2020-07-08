@@ -40,6 +40,8 @@ ACCESS_PROJECT_STARTSWITH = os.getenv('ACCESS_PROJECT_STARTSWITH', 'group')
 ACCESS_PROJECT_DELIMITER = os.getenv('ACCESS_PROJECT_DELIMITER', None)
 if ACCESS_PROJECT_DELIMITER is None:
     ACCESS_PROJECT_DELIMITER = ' '
+RESTRICT_KEYWORD = 'RESTRICTED'
+RESTRICT_PROJECT_DELIMITER='='
 
 @dramatiq.actor(priority=10, max_retries=2)
 def statistic_prepare_data(project_id, git_ssh_url, changes):
@@ -144,16 +146,28 @@ def access_to_project(project_id):
     if description is None:
         return
     for line in description.splitlines():
-        if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
-            # TODO regexp problems? maybe remove from start bu 'len'?
-            group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
-            ldap_group_owner, ldap_group_users = get_ldap_owner_with_users(group_name)
-            for ldap_user in ldap_group_users:
-                try:
-                    email = ldap_user[1]['mail'][0].decode().lower()
-                    gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, email)
-                except Exception as e:
-                    print(e)
+        ADD_LDAP_GROUP=[]
+        RESTRICTED_LDAP_GROUP=[]
+        for line in description.splitlines():
+          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and  not RESTRICT_KEYWORD in line:
+             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
+             ADD_LDAP_GROUP.append(group_name)
+          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}')and  RESTRICT_KEYWORD in line:
+             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
+             RESTRICTED_LDAP_GROUP.append(group_name)
+    users_to_add=[]
+    for i in ADD_LDAP_GROUP:
+      ldap_group_users = get_ldap_owner_with_users(i)
+      for ldap_user in ldap_group_users:
+            try:
+                email = ldap_user [1]['mail'][0].decode().lower()
+                users_to_add.append(email)
+            except Exception as e:
+                print(e)
+    current_project_members=[]
+    members = project.members.all(as_list=False, per_page=CRON_PROJECTS_PER_PAGE)
+    for i in members:
+      current_project_members.append(i.Mail)           
 
 @dramatiq.actor(priority=10, max_retries=3)
 def gitlab_add_user_to_project(project_id, access_level, email):
@@ -171,6 +185,18 @@ def gitlab_add_user_to_project(project_id, access_level, email):
     except gitlab.exceptions.GitlabCreateError as e:
         print(f'User {email} not added to {project.name} ==> {e}')
 
+@dramatiq.actor(priority=10, max_retries=3)
+def gitlab_remove_user_from_project(project_id, email):
+    gitlab_user = gl.users.list(search=email)
+    if not gitlab_user:
+        print(f'User {email} not found')
+        return
+    project = gl.projects.get(project_id)
+    try:
+        project.members.delete({'user_id': gitlab_user[0].id)
+        print(f'User {email} removed from {project.name}')
+    except gitlab.exceptions.GitlabHttpError as e:
+        print(f'User {email} not removed from {project.name} ==> {e}')
 
 @dramatiq.actor(priority=10, max_retries=3)
 def gitlab_remove_user_from_group(group_id, ldap_emails):
