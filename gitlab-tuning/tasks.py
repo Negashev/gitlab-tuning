@@ -40,8 +40,8 @@ ACCESS_PROJECT_STARTSWITH = os.getenv('ACCESS_PROJECT_STARTSWITH', 'group')
 ACCESS_PROJECT_DELIMITER = os.getenv('ACCESS_PROJECT_DELIMITER', None)
 if ACCESS_PROJECT_DELIMITER is None:
     ACCESS_PROJECT_DELIMITER = ' '
-RESTRICT_KEYWORD = 'RESTRICTED'
-RESTRICT_PROJECT_DELIMITER='='
+RESTRICT_KEYWORD = os.getenv('RESTRICT_KEYWORD', 'RESTRICTED')
+RESTRICT_PROJECT_DELIMITER = os.getenv('RESTRICT_PROJECT_DELIMITER', '=')
 
 @dramatiq.actor(priority=10, max_retries=2)
 def statistic_prepare_data(project_id, git_ssh_url, changes):
@@ -145,29 +145,51 @@ def access_to_project(project_id):
     description = project.description
     if description is None:
         return
+    ADD_LDAP_GROUP=[]
+    RESTRICTED_LDAP_GROUP=[]
     for line in description.splitlines():
-        ADD_LDAP_GROUP=[]
-        RESTRICTED_LDAP_GROUP=[]
         for line in description.splitlines():
-          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and  not RESTRICT_KEYWORD in line:
-             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}').sub('', line)
+          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}'):
+             group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
              ADD_LDAP_GROUP.append(group_name)
-          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}')and  RESTRICT_KEYWORD in line:
+          if line.startswith(f'{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}') and line.endswith('{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}'):
              group_name = re.compile(f'^{ACCESS_PROJECT_STARTSWITH}{ACCESS_PROJECT_DELIMITER}|{RESTRICT_PROJECT_DELIMITER}{RESTRICT_KEYWORD}').sub('', line)
              RESTRICTED_LDAP_GROUP.append(group_name)
-    users_to_add=[]
+    if ADD_LDAP_GROUP is []:
+        return
+    # create emails array for adding
+    users_to_add = []
     for i in ADD_LDAP_GROUP:
       ldap_group_users = get_ldap_owner_with_users(i)
       for ldap_user in ldap_group_users:
             try:
-                email = ldap_user [1]['mail'][0].decode().lower()
-                users_to_add.append(email)
+                email = ldap_user[1]['mail'][0].decode().lower
+                if email not in users_to_add:
+                    users_to_add.append(email)
             except Exception as e:
                 print(e)
-    current_project_members=[]
-    members = project.members.all(as_list=False, per_page=CRON_PROJECTS_PER_PAGE)
-    for i in members:
-      current_project_members.append(i.Mail)           
+    # create emails array for restricted
+    users_to_restricted = []
+    for i in RESTRICTED_LDAP_GROUP:
+      ldap_group_users = get_ldap_owner_with_users(i)
+      for ldap_user in ldap_group_users:
+            try:
+                email = ldap_user[1]['mail'][0].decode().lower
+                if email not in users_to_restricted:
+                    users_to_restricted.append(email)
+            except Exception as e:
+                print(e)
+    # get all emails users in project
+    current_project_members = []
+    members = project.members.all(as_list=False, all=True, per_page=CRON_PROJECTS_PER_PAGE)
+    for member in members:
+      current_project_members.append(member.email)
+    # add new ldap users in project
+    [gitlab_add_user_to_project.send(project_id, gitlab.DEVELOPER_ACCESS, x) for x in users_to_add if x not in current_project_members]
+    # if we need to restrict users
+    if users_to_restricted is not []:
+        [gitlab_remove_user_from_project.send(project_id, x) for x in current_project_members if x not in users_to_restricted]
+    
 
 @dramatiq.actor(priority=10, max_retries=3)
 def gitlab_add_user_to_project(project_id, access_level, email):
