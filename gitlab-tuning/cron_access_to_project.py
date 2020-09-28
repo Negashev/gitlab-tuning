@@ -2,7 +2,7 @@ import time
 from tasks import gl, CRON_PROJECTS_PER_PAGE, access_to_project
 
 print(f'run access_to_project')
-projects = gl.projects.list(as_list=False, per_page=CRON_PROJECTS_PER_PAGE)
+projects = gl.projects.list(as_list=False, per_page=CRON_PROJECTS_PER_PAGE, simple=True)
 for i in projects:
     condition = True
     while condition:
