@@ -6,6 +6,7 @@ RUN apk add --update python3
 RUN apk add --update openldap
 RUN apk add --update jpeg
 RUN apk add --update libmemcached
+RUN apk add --update py3-requests
 
 ADD requirements.txt ./
 
