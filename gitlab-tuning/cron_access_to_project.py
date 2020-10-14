@@ -7,6 +7,7 @@ for i in projects:
     condition = True
     while condition:
         try:
+            print(i.id, i.name)
             access_to_project.send(i.id)
             condition = False
         except Exception as e:
