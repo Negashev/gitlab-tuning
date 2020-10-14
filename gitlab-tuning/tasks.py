@@ -6,6 +6,7 @@ import dramatiq
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
 from dramatiq.brokers.redis import RedisBroker
 import requests
+from requests.packages.urllib3.exceptions import ConnectTimeoutError
 import gitlab
 import time
 
@@ -79,7 +80,10 @@ def statistic_prepare_data(project_id, git_ssh_url, changes):
 
 @dramatiq.actor(priority=20, max_retries=3)
 def statistic_push_data(data):
-    requests.post(STATISTIC_URL, data=data, timeout=STATISTIC_URL_TIMEOUT)
+    try:
+        requests.post(STATISTIC_URL, data=data, timeout=STATISTIC_URL_TIMEOUT)
+    except ConnectTimeoutError as e:
+        print(e)
     print(f"commit {data['id']} by {data['author_email']} in {data['repository']}")
 
 
